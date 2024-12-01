@@ -48,11 +48,41 @@ loader.load(
     model.traverse(function(node) {
       if (node.isMesh && node.name === 'Cube') {
           const textureLoader = new THREE.TextureLoader();
-          textureLoader.load('public/pattern.jpg', function(texture) {
+          textureLoader.load('/public/pattern.jpg', function(texture) {
               node.material.map = texture;
               node.material.needsUpdate = true;
               cubeTexture = texture;
           });
+      }
+
+      if (node.isMesh && node.name === 'Sphere') {
+        // Apply a custom shader material to the sphere
+        const vertexShader = `
+          varying vec3 vPosition;
+          void main() {
+            vPosition = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `;
+        
+        const fragmentShader = `
+          uniform vec3 color;
+          varying vec3 vPosition;
+          
+          void main() {
+            gl_FragColor = vec4(color * 0.5 + 0.5, 1.0);  // Basic color manipulation
+          }
+        `;
+
+        const sphereMaterial = new THREE.ShaderMaterial({
+          vertexShader,
+          fragmentShader,
+          uniforms: {
+            color: { value: new THREE.Color(0x44aa88) },
+          },
+        });
+        node.material = sphereMaterial;
+        window.sphereMaterial = sphereMaterial;
       }
   });
 
@@ -80,6 +110,7 @@ loader.load(
 const cubeSpeedSlider = document.getElementById('cube-animation-speed');
 const sphereSpeedSlider = document.getElementById('sphere-animation-speed');
 const cubeTextureSlider = document.getElementById('cube-texture');
+const sphereShaderSlider = document.getElementById('sphere-shader');
 
 cubeSpeedSlider.addEventListener('input', (event) => {
   const speed = parseFloat(event.target.value);
@@ -102,6 +133,16 @@ cubeTextureSlider.addEventListener('input', (event) => {
     cubeTexture.needsUpdate = true;
   }
 });
+
+sphereShaderSlider.addEventListener('input', (event) => {
+    const value = parseFloat(event.target.value);
+    if (window.sphereMaterial) {
+        const color = new THREE.Color(value, 0.5, 1 - value);
+        window.sphereMaterial.uniforms.color.value = color;
+        sphereMaterial.needsUpdate = true;
+      }
+    }
+);
 
 function animate() {
   // Calculate delta time for consistent animations
