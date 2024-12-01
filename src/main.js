@@ -1,47 +1,119 @@
-import * as THREE from 'three';
+import * as THREE from '../node_modules/three/build/three.module.js';
+import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
-// Create scene
 const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-// Create camera
-const camera = new THREE.PerspectiveCamera(
-    75, 
-    window.innerWidth / window.innerHeight, 
-    0.1, 
-    1000
-);
-camera.position.z = 5;
-
-// Create renderer
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setAnimationLoop(animate);
 document.body.appendChild(renderer.domElement);
 
-// Create a cube
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
+let cubeMixer, sphereMixer; // Separate mixers for the cube and sphere
+const clock = new THREE.Clock(); // For delta time calculation
 
-// Animation loop
-function animate() {
-    requestAnimationFrame(animate);
+let cubeTexture;
 
-    // Rotate the cube
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+// Load the GLB model
+const loader = new GLTFLoader();
+loader.load(
+  'public/blenderthreeanimated2.glb',
+  (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
 
-    renderer.render(scene, camera);
-}
-animate();
+    // Find the cube and sphere objects by name
+    const cube = model.getObjectByName('Cube');
+    const sphere = model.getObjectByName('Sphere');
 
-// Handle window resizing
-window.addEventListener('resize', () => {
-    const newWidth = window.innerWidth;
-    const newHeight = window.innerHeight;
+    // Check if the animations exist and set up the mixers
+    if (cube && gltf.animations.length > 0) {
+      cubeMixer = new THREE.AnimationMixer(cube);
+      const cubeClip = gltf.animations.find((clip) => clip.name === 'CubeAction'); // Replace with the correct name
+      if (cubeClip) {
+        const cubeAction = cubeMixer.clipAction(cubeClip);
+        cubeAction.play();
+      }
+    }
 
-    camera.aspect = newWidth / newHeight;
-    camera.updateProjectionMatrix();
+    if (sphere && gltf.animations.length > 0) {
+      sphereMixer = new THREE.AnimationMixer(sphere);
+      const sphereClip = gltf.animations.find((clip) => clip.name === 'SphereAction'); // Replace with the correct name
+      if (sphereClip) {
+        const sphereAction = sphereMixer.clipAction(sphereClip);
+        sphereAction.play();
+      }
+    }
 
-    renderer.setSize(newWidth, newHeight);
+    model.traverse(function(node) {
+      if (node.isMesh && node.name === 'Cube') {
+          const textureLoader = new THREE.TextureLoader();
+          textureLoader.load('public/pattern.jpg', function(texture) {
+              node.material.map = texture;
+              node.material.needsUpdate = true;
+              cubeTexture = texture;
+          });
+      }
+  });
+
+    // Add lighting to the scene
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 1, 1);
+    scene.add(directionalLight);
+
+    camera.position.set(3, 1, 5); // Adjust x, y, z as needed
+    camera.lookAt(scene.position);
+
+  },
+  (progress) => {
+    console.log(`Loading file: ${(progress.loaded / progress.total * 100)}% loaded`);
+  },
+  (error) => {
+    console.error('An error occurred while loading the GLB model:', error);
+  }
+);
+
+// Get the sliders and add event listeners to control animation speed
+const cubeSpeedSlider = document.getElementById('cube-animation-speed');
+const sphereSpeedSlider = document.getElementById('sphere-animation-speed');
+const cubeTextureSlider = document.getElementById('cube-texture');
+
+cubeSpeedSlider.addEventListener('input', (event) => {
+  const speed = parseFloat(event.target.value);
+  if (cubeMixer) {
+    cubeMixer.timeScale = speed;
+  }
 });
+
+sphereSpeedSlider.addEventListener('input', (event) => {
+  const speed = parseFloat(event.target.value);
+  if (sphereMixer) {
+    sphereMixer.timeScale = speed;
+  }
+});
+
+cubeTextureSlider.addEventListener('input', (event) => {
+  const texture = parseFloat(event.target.value);
+  if (cubeMixer) {
+    cubeTexture.repeat.set(texture, texture);
+    cubeTexture.needsUpdate = true;
+  }
+});
+
+function animate() {
+  // Calculate delta time for consistent animations
+  const deltaTime = clock.getDelta();
+
+  // Update the mixers
+  if (cubeMixer) {
+    cubeMixer.update(deltaTime);
+  }
+  if (sphereMixer) {
+    sphereMixer.update(deltaTime);
+  }
+
+  renderer.render(scene, camera);
+}
