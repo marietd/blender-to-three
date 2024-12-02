@@ -13,6 +13,7 @@ let cubeMixer, sphereMixer; // Separate mixers for the cube and sphere
 const clock = new THREE.Clock(); // For delta time calculation
 
 let cubeTexture;
+let coneMaterial;
 
 // Load the GLB model
 const loader = new GLTFLoader();
@@ -109,17 +110,14 @@ loader.load(
 loader.load(
     'public/cone.glb',
     (gltf) => {
-      const cone = gltf.scene;
-      scene.add(cone);
+      const model = gltf.scene;
+      scene.add(model);
   
-      const customObject = cone.getObjectByName('Cone');
-      if (customObject) {
-        customObject.position.x = 2;
-        customObject.material.color.set(0xff0000);
-        customObject.material.needsUpdate = true;
+      const cone = model.getObjectByName('Cone');
+      if (cone && cone.isMesh) {
+        cone.position.x = 2;
+        coneMaterial = cone.material;
       }
-  
-      console.log('cone loaded and added to the scene');
     },
     (progress) => {
       console.log(`Loading second model: ${(progress.loaded / progress.total * 100)}% loaded`);
@@ -134,6 +132,7 @@ const cubeSpeedSlider = document.getElementById('cube-animation-speed');
 const sphereSpeedSlider = document.getElementById('sphere-animation-speed');
 const cubeTextureSlider = document.getElementById('cube-texture');
 const sphereShaderSlider = document.getElementById('sphere-shader');
+const coneColourSlider = document.getElementById('cone-colour');
 
 cubeSpeedSlider.addEventListener('input', (event) => {
   const speed = parseFloat(event.target.value);
@@ -163,6 +162,16 @@ sphereShaderSlider.addEventListener('input', (event) => {
         const color = new THREE.Color(value, 0.5, 1 - value);
         window.sphereMaterial.uniforms.color.value = color;
         sphereMaterial.needsUpdate = true;
+      }
+    }
+);
+
+coneColourSlider.addEventListener('input', (event) => {
+    const value = parseFloat(event.target.value);
+    if (coneMaterial && coneMaterial.color) {
+        const colour = new THREE.Color(value, 0.5, 1 - value);
+        coneMaterial.color.copy(colour);
+        coneMaterial.needsUpdate = true;
       }
     }
 );
