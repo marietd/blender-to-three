@@ -106,6 +106,29 @@ loader.load(
   }
 );
 
+loader.load(
+    'public/cone.glb',
+    (gltf) => {
+      const cone = gltf.scene;
+      scene.add(cone);
+  
+      const customObject = cone.getObjectByName('Cone');
+      if (customObject) {
+        customObject.position.x = 2;
+        customObject.material.color.set(0xff0000);
+        customObject.material.needsUpdate = true;
+      }
+  
+      console.log('cone loaded and added to the scene');
+    },
+    (progress) => {
+      console.log(`Loading second model: ${(progress.loaded / progress.total * 100)}% loaded`);
+    },
+    (error) => {
+      console.error('An error occurred while loading the second GLB model:', error);
+    }
+  );
+
 // Get the sliders and add event listeners to control animation speed
 const cubeSpeedSlider = document.getElementById('cube-animation-speed');
 const sphereSpeedSlider = document.getElementById('sphere-animation-speed');
