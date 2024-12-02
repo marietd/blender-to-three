@@ -18,7 +18,9 @@ let coneMaterial;
 // Load the GLB model
 const loader = new GLTFLoader();
 loader.load(
-  'public/blenderthreeanimated2.glb',
+    import.meta.env.DEV 
+    ? './public/blenderthreeanimated2.glb' 
+    : `${import.meta.env.BASE_URL}blenderthreeanimated2.glb`,
   (gltf) => {
     const model = gltf.scene;
     scene.add(model);
@@ -49,7 +51,11 @@ loader.load(
     model.traverse(function(node) {
       if (node.isMesh && node.name === 'Cube') {
           const textureLoader = new THREE.TextureLoader();
-          textureLoader.load('/public/pattern.jpg', function(texture) {
+          textureLoader.load(
+            import.meta.env.DEV 
+            ? './public/pattern.jpg' 
+            : `${import.meta.env.BASE_URL}pattern.jpg`,
+            function(texture) {
               node.material.map = texture;
               node.material.needsUpdate = true;
               cubeTexture = texture;
@@ -108,7 +114,9 @@ loader.load(
 );
 
 loader.load(
-    'public/cone.glb',
+    import.meta.env.DEV 
+    ? './public/cone.glb'
+    : `${import.meta.env.BASE_URL}cone.glb`,
     (gltf) => {
       const model = gltf.scene;
       scene.add(model);

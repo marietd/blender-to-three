@@ -8,5 +8,10 @@ export default defineConfig({
   },
   server: {
     open: true 
-  }
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: './',
+  },
+  base: '/blender-to-three/',
 });
